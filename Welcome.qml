@@ -87,12 +87,17 @@ Window {
                                         OpenUI.statusSuccess.b, 0.15)
                                : Qt.rgba(OpenUI.statusWarning.r, OpenUI.statusWarning.g,
                                         OpenUI.statusWarning.b, 0.15)
-                        Text {
+                        Row {
                             id: oakStatus
                             anchors.centerIn: parent
-                            text: welcomeApp.oakReady ? "\u2713 OAK 安全已启用" : "\u25D2 OAK 安全初始化中..."
-                            color: welcomeApp.oakReady ? OpenUI.statusSuccess : OpenUI.statusWarning
-                            font.pixelSize: 12
+                            spacing: 4
+                            ThemedIcon { name: welcomeApp.oakReady ? "checkmark" : "task-progress"; ctx: welcomeApp.oakReady ? "Actions" : "Status"; size: 12; color: welcomeApp.oakReady ? OpenUI.statusSuccess : OpenUI.statusWarning; anchors.verticalCenter: parent.verticalCenter }
+                            Text {
+                                text: welcomeApp.oakReady ? "OAK 安全已启用" : "OAK 安全初始化中..."
+                                color: welcomeApp.oakReady ? OpenUI.statusSuccess : OpenUI.statusWarning
+                                font.pixelSize: 12
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
 
@@ -105,12 +110,17 @@ Window {
                                         OpenUI.statusSuccess.b, 0.15)
                                : Qt.rgba(OpenUI.statusWarning.r, OpenUI.statusWarning.g,
                                         OpenUI.statusWarning.b, 0.15)
-                        Text {
+                        Row {
                             id: optStatus
                             anchors.centerIn: parent
-                            text: welcomeApp.optReady ? "\u2713 opt 已就绪" : "\u25D2 opt 初始化中..."
-                            color: welcomeApp.optReady ? OpenUI.statusSuccess : OpenUI.statusWarning
-                            font.pixelSize: 12
+                            spacing: 4
+                            ThemedIcon { name: welcomeApp.optReady ? "checkmark" : "task-progress"; ctx: welcomeApp.optReady ? "Actions" : "Status"; size: 12; color: welcomeApp.optReady ? OpenUI.statusSuccess : OpenUI.statusWarning; anchors.verticalCenter: parent.verticalCenter }
+                            Text {
+                                text: welcomeApp.optReady ? "opt 已就绪" : "opt 初始化中..."
+                                color: welcomeApp.optReady ? OpenUI.statusSuccess : OpenUI.statusWarning
+                                font.pixelSize: 12
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
                 }
