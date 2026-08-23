@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include <QUrlQuery>
 
 size_t qHash(const IconLoader::CacheKey& k, size_t seed) noexcept {
     return qHashMulti(seed, k.name, k.size, k.ctx);

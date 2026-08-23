@@ -10,12 +10,12 @@
  *     (符合 NUI 单色线条风, 任意语义色即时变色)
  *   - color 为空时保留 SVG 原始填色 (应用彩色 logo)
  */
-#include <QQuickAsyncImageProvider>
+#include <QQuickImageProvider>
 #include <QImage>
 
-class IconProvider : public QQuickAsyncImageProvider {
+class IconProvider : public QQuickImageProvider {
 public:
+    IconProvider();
     QImage requestImage(const QString& id, QSize* size,
-                        const QSize& requestedSize,
-                        const QUrlQuery& query) override;
+                        const QSize& requestedSize) override;
 };
