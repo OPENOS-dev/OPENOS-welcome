@@ -4,12 +4,6 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      kernel:
-        description: 内核分层 (仅 kernel 组件生效)
-        type: choice
-        default: base
-        options: [base, base7, preview, classic]
 
 jobs:
   build:
@@ -22,9 +16,8 @@ jobs:
         arch: [x86-64, x86, arm64, arm32, loong64]
 
     env:
-      COMPONENT: openos-welcome
+      COMPONENT: openos-calc
       BINPKG_REPO: OPENOS-dev/OPENOS-BUILD-BINPKG
-      KERNEL_TIER: ${{ inputs.kernel || 'base' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +43,6 @@ jobs:
       - name: 构建并打包 binpkg
         run: |
           set -euo pipefail
-          # 全程输出写入日志文件 (供失败上报 step 读取)
           exec > >(tee "$RUNNER_TEMP/build.log") 2>&1
           ARCH="${{ matrix.arch }}"
           case "$ARCH" in
@@ -61,16 +53,15 @@ jobs:
             loong64)TARGET=loongarch64-openos-linux-gnu; CROSS=loongarch64-linux-gnu- ;;
           esac
           export TARGET CROSS
-          WORK="$(mktemp -d)"
+          WORK="$RUNNER_TEMP/${COMPONENT}-${ARCH}-build"
+          rm -rf "$WORK"; mkdir -p "$WORK"
           PKG="$WORK/${COMPONENT}-${ARCH}-DEV2026.1.pkg.tar.zst"
-                    meson setup "$WORK/build" --prefix=/usr -Dbuildtype=release
+          meson setup "$WORK/build" --prefix=/usr -Dbuildtype=release
           meson compile -C "$WORK/build"
           DESTDIR="$WORK/pkg" meson install -C "$WORK/build"
-          # 打包
           mkdir -p "$WORK/pkg"
           tar --zstd -cf "$PKG" -C "$WORK/pkg" .
           ls -la "$PKG"
-          echo "WORK=$WORK" >> $GITHUB_ENV
 
       - name: 推送 binpkg 到共享仓库
         env:
@@ -82,19 +73,23 @@ jobs:
             exit 0
           fi
           ARCH="${{ matrix.arch }}"
+          WORK="$RUNNER_TEMP/${COMPONENT}-${ARCH}-build"
           PKG="$WORK/${COMPONENT}-${ARCH}-DEV2026.1.pkg.tar.zst"
           rm -rf /tmp/binpkg-repo
           git clone --depth 1 "https://x-access-token:${BINPKG_TOKEN}@github.com/${BINPKG_REPO}.git" /tmp/binpkg-repo
           cd /tmp/binpkg-repo
           mkdir -p "bins/${COMPONENT}/${ARCH}"
           cp -f "$PKG" "bins/${COMPONENT}/${ARCH}/"
-          # 构建成功: 删除对应的失败日志, 避免 failure-report 重复创建 Issue
           rm -f "logs/${COMPONENT}/$ARCH.log"
           git config user.name "OPENOS CI"
           git config user.email "ci@openos.dev"
           git add -A
           git commit -m "binpkg: ${COMPONENT} ${ARCH} (${GITHUB_SHA:0:8})" || echo "no changes"
-          git push -q origin main
+          for i in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push -q origin main; then break; fi
+            echo "推送冲突，重试 $i/5..."
+            sleep $((RANDOM % 5 + 3))
+          done
 
       - name: 上报失败原因到共享仓库
         if: failure()
@@ -129,4 +124,8 @@ jobs:
           git config user.email "ci@openos.dev"
           git add -A
           git commit -m "fail-log: ${COMPONENT}/${ARCH} (${GITHUB_SHA:0:8})" || echo "no changes"
-          git push -q origin main
+          for i in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push -q origin main; then break; fi
+            echo "推送冲突，重试 $i/5..."
+            sleep $((RANDOM % 5 + 3))
+          done
